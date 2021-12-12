@@ -1,0 +1,180 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="simple_dog_2d">
+    <pose>0 0 2 0 0 0</pose>
+
+    <link name="torso">
+      <pose>0 0 0 0 1.570796 0</pose>
+      <collision name="torso_collision">
+        <geometry>
+          <cylinder>
+            <length>1</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="torso_visual">
+        <geometry>
+          <cylinder>
+            <length>1</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+      </visual>
+    </link>
+
+    <link name="thigh_front">
+      <pose relative_to="torso">.25 0 -.5 0 1.570796 0</pose>
+      <collision name="thigh_front_collision">
+        <geometry>
+          <cylinder>
+            <length>.5</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="thigh_front_visual">
+        <geometry>
+          <cylinder>
+            <length>.5</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+      </visual>
+    </link>
+
+    <link name="thigh_back">
+      <pose relative_to="torso">.25 0 .5 0 1.570796 0</pose>
+      <collision name="thigh_back_collision">
+        <geometry>
+          <cylinder>
+            <length>.5</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="thigh_back_visual">
+        <geometry>
+          <cylinder>
+            <length>.5</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+      </visual>
+    </link>
+
+    <link name="lower_leg_front">
+      <pose relative_to="thigh_front">0 0 .5 0 0 0</pose>
+      <collision name="lower_leg_front_collision">
+        <geometry>
+          <cylinder>
+            <length>.5</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="lower_leg_front_visual">
+        <geometry>
+          <cylinder>
+            <length>.5</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+      </visual>
+    </link>
+
+    <link name="lower_leg_back">
+      <pose relative_to="thigh_back">0 0 .5 0 0 0</pose>
+      <collision name="lower_leg_back_collision">
+        <geometry>
+          <cylinder>
+            <length>.5</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="lower_leg_back_visual">
+        <geometry>
+          <cylinder>
+            <length>.5</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+      </visual>
+    </link>
+
+    <joint name="hip_front" type="revolute">
+      <pose>0 0 -.25 0 0 0</pose>
+      <parent>torso</parent>
+      <child>thigh_front</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <effort>0</effort>
+        </limit>
+        <dynamics>
+          <damping>0</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+
+    <joint name="hip_back" type="revolute">
+      <pose>0 0 -.25 0 0 0</pose>
+      <parent>torso</parent>
+      <child>thigh_back</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <effort>0</effort>
+        </limit>
+        <dynamics>
+          <damping>0</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+
+    <joint name="knee_front" type="revolute">
+      <pose>0 0 -.25 0 0 0</pose>
+      <parent>thigh_front</parent>
+      <child>lower_leg_front</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <effort>0</effort>
+        </limit>
+        <dynamics>
+          <damping>0</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+
+    <joint name="knee_back" type="revolute">
+      <pose>0 0 -.25 0 0 0</pose>
+      <parent>thigh_back</parent>
+      <child>lower_leg_back</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <effort>0</effort>
+        </limit>
+        <dynamics>
+          <damping>0</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+
+  </model>
+</sdf>
+

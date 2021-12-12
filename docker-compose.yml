@@ -1,0 +1,18 @@
+version: "2.2"
+
+services:
+  robot-simulation:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: robot-simulation:latest
+    command: ["python3", "main.py"]
+    network_mode: "host"
+
+#    volumes:
+#      - /tmp/.X11-unix:/tmp/.X11-unix 
+#    devices:
+#      - /dev/dri:/dev/dri
+#    environment:
+#      - DISPLAY=${DISPLAY}
+
