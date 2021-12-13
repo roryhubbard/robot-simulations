@@ -1,4 +1,3 @@
-from pathlib import Path
 import numpy as np
 
 from pydrake.multibody.parsing import Parser
@@ -14,13 +13,14 @@ def main():
 
   parser = Parser(plant)
 
-  simple_dog_file = str(Path("models/simple_dog_2d.sdf"))
+  simple_dog_file = "models/simple_dog_2d.sdf"
   simple_dog = parser.AddModelFromFile(simple_dog_file, model_name="simple_dog")
 
-  ground_file = str(Path("LittleDog/ground.urdf"))
+  ground_file = "models/little_dog/ground.urdf"
   ground = parser.AddModelFromFile(ground_file, model_name="ground")
 
-  meshcat_vis = ConnectMeshcatVisualizer(builder, scene_graph, zmq_url="tcp://127.0.0.1:6000")
+  meshcat_vis = ConnectMeshcatVisualizer(builder, scene_graph,
+                                         zmq_url="tcp://127.0.0.1:6000")
 
   plant.Finalize()
   diagram = builder.Build()
