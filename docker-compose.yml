@@ -9,10 +9,10 @@ services:
     command: ["python3", "main.py"]
     network_mode: "host"
 
-#    volumes:
-#      - /tmp/.X11-unix:/tmp/.X11-unix 
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix 
+    environment:
+      - DISPLAY=${DISPLAY}
 #    devices:
 #      - /dev/dri:/dev/dri
-#    environment:
-#      - DISPLAY=${DISPLAY}
 

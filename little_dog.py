@@ -1,5 +1,7 @@
 import numpy as np
-from pydrake.all import AddMultibodyPlantSceneGraph, DiagramBuilder, Parser, ConnectMeshcatVisualizer, RigidTransform,
+from pydrake.all import (
+    AddMultibodyPlantSceneGraph, DiagramBuilder,
+    Parser, ConnectMeshcatVisualizer, RigidTransform)
 
 def set_home(plant, context):
     hip_roll = .1;
@@ -36,8 +38,7 @@ from pydrake.all import (
     MultibodyPlant, JointIndex, RotationMatrix, PiecewisePolynomial, JacobianWrtVariable,
     MathematicalProgram, Solve, eq, AutoDiffXd, ExtractGradient, SnoptSolver,
     InitializeAutoDiff, ExtractValue, ExtractGradient,
-    AddUnitQuaternionConstraintOnPlant, PositionConstraint, OrientationConstraint
-)
+    AddUnitQuaternionConstraintOnPlant, PositionConstraint, OrientationConstraint)
 from pydrake.common.containers import namedview
 
 # Need this because a==b returns True even if a = AutoDiffXd(1, [1, 2]), b= AutoDiffXd(2, [3, 4])
@@ -89,11 +90,11 @@ def gait_optimization(gait = 'walking_trot'):
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1e-3)
     parser = Parser(plant)
-    littledog = parser.AddModelFromFile(FindResource('models/little_dog/little_dog.urdf'))
+    littledog = parser.AddModelFromFile('models/little_dog/little_dog.urdf')
     plant.Finalize()
     visualizer = ConnectMeshcatVisualizer(builder, 
         scene_graph=scene_graph, 
-        zmq_url=zmq_url)
+        zmq_url="tcp://127.0.0.1:6000")
     diagram = builder.Build()
     context = diagram.CreateDefaultContext()
     plant_context = plant.GetMyContextFromRoot(context)
@@ -415,8 +416,8 @@ def gait_optimization(gait = 'walking_trot'):
 
     # TODO: Set solver parameters (mostly to make the worst case solve times less bad)
     snopt = SnoptSolver().solver_id()
-    prog.SetSolverOption(snopt, 'Iterations Limits', 1e5 if running_as_notebook else 1)
-    prog.SetSolverOption(snopt, 'Major Iterations Limit', 200 if running_as_notebook else 1)
+    prog.SetSolverOption(snopt, 'Iterations Limits', 1e5)
+    prog.SetSolverOption(snopt, 'Major Iterations Limit', 200)
     prog.SetSolverOption(snopt, 'Major Feasibility Tolerance', 5e-6)
     prog.SetSolverOption(snopt, 'Major Optimality Tolerance', 1e-4)
     prog.SetSolverOption(snopt, 'Superbasics limit', 2000)
@@ -484,8 +485,8 @@ def gait_optimization(gait = 'walking_trot'):
     visualizer.publish_recording()
 
 # Try them all!  The last two could use a little tuning.
-gait_optimization('walking_trot')
+#gait_optimization('walking_trot')
 #gait_optimization('running_trot')
 #gait_optimization('rotary_gallop')  
-#gait_optimization('bound')
+gait_optimization('bound')
 
