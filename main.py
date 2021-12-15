@@ -10,10 +10,21 @@ from pydrake.all import Solve, LinearSystem, DirectTranscription, RigidTransform
 def main():
   # Discrete-time approximation of the double integrator.
   dt = 0.01;
-  A = np.eye(2) + dt*np.mat('0 1; 0 0')
-  B = dt*np.mat('0; 1')
-  C = np.eye(2)
-  D = np.zeros((2,1))
+  A_tile = np.array([
+    [1., dt],
+    [0., 1.],
+  ])
+  A = np.kron(np.eye(3), A_tile)
+  B = np.array([
+    [0., 0.],
+    [dt, 0.],
+    [0., 0.],
+    [0., dt],
+    [0., 0.],
+    [0., 0.],
+  ])
+  C = np.eye(6)
+  D = np.zeros((6, 2))
   sys = LinearSystem(A, B, C, D, dt)
 
   builder = DiagramBuilder()
@@ -27,11 +38,11 @@ def main():
   context = diagram.CreateDefaultContext()
   plant_context = plant.GetMyContextFromRoot(context)
 
-  x0 = [-2., 0.]
-  xf = [0., 0.]
+  x0 = [-2., 0., -2., 0., 0., 0.]
+  xf = [0., 0., 0., 0., 0., 0.]
 
   plant.SetFreeBodyPose(plant_context, plant.GetBodyByName('body'),
-                        RigidTransform([x0[0], 0, 0.1]))
+                        RigidTransform(x0[::2]))
   visualizer.load()
   diagram.Publish(context)
 
@@ -40,33 +51,36 @@ def main():
   prog.AddBoundingBoxConstraint(x0, x0, prog.initial_state())
   prog.AddBoundingBoxConstraint(xf, xf, prog.final_state())
   x = prog.state()
-  u = prog.input()[0]
+  u = prog.input()
   #prog.AddRunningCost(10*x[0]**2 + x[1]**2)
   #prog.AddRunningCost(u**2)
-  prog.AddConstraintToAllKnotPoints(u <= 1)
-  prog.AddConstraintToAllKnotPoints(u >= -1)
+  prog.AddConstraintToAllKnotPoints(u[0] <= 1)
+  prog.AddConstraintToAllKnotPoints(u[0] >= -1)
+  prog.AddConstraintToAllKnotPoints(u[1] <= 1)
+  prog.AddConstraintToAllKnotPoints(u[1] >= -1)
 
   result = Solve(prog)
   assert(result.is_success()), "Optimization failed"
 
-  x_sol = prog.ReconstructStateTrajectory(result)
-  t = x_sol.get_segment_times()
-  x_values = x_sol.vector_values(t)
-  q = x_values[0,:]
-  _qdot = x_values[1,:]
+  traj = prog.ReconstructStateTrajectory(result)
+  t = traj.get_segment_times()
+  x_values = traj.vector_values(t)
+  x_sol = x_values[0, :]
+  y_sol = x_values[2, :]
+  z_sol = x_values[4, :]
 
   #plt.figure()
   #plt.plot(x_values[0,:], x_values[1,:])
-  #plt.xlabel('q')
+  #plt.xlabel('x_sol')
   #plt.ylabel('qdot');
   #plt.show()
   #plt.close()
 
   visualizer.start_recording()
-  for i, q in enumerate(q):
+  for i in range(len(x_sol)):
     context.SetTime(t[i])
     plant.SetFreeBodyPose(plant_context, plant.GetBodyByName('body'),
-                          RigidTransform([q, 0, 0.1]))
+                          RigidTransform([x_sol[i], y_sol[i], z_sol[i]]))
     diagram.Publish(context)
   visualizer.stop_recording()
   visualizer.publish_recording()
