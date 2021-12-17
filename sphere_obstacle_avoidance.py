@@ -6,23 +6,25 @@ from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.meshcat_visualizer import ConnectMeshcatVisualizer
 from pydrake.all import RigidTransform
-from pydrake.math import RollPitchYaw
 
 
 def make_system():
-  dt = 0.1
+  dt = 0.1;
   A_tile = np.array([
     [1., dt],
     [0., 1.],
   ])
-  A = np.kron(np.eye(6), A_tile)
-  B_tile = np.array([
-    [0.],
-    [dt],
+  A = np.kron(np.eye(3), A_tile)
+  B = np.array([
+    [0., 0.],
+    [dt, 0.],
+    [0., 0.],
+    [0., dt],
+    [0., 0.],
+    [0., 0.],
   ])
-  B = np.kron(np.eye(6), B_tile)
-  C = np.eye(12)
-  D = np.zeros((12, 6))
+  C = np.eye(6)
+  D = np.zeros((6, 2))
   return A, B, C, D, dt
 
 
@@ -30,7 +32,7 @@ def drake_setup():
   builder = DiagramBuilder()
   plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1e-3)
   parser = Parser(plant)
-  parser.AddModelFromFile('models/factory_bot.sdf')
+  parser.AddModelFromFile('models/sphere.sdf')
   plant.Finalize()
   visualizer = ConnectMeshcatVisualizer(builder, scene_graph,
                                         zmq_url='tcp://127.0.0.1:6000')
@@ -44,17 +46,17 @@ def main():
   plant, visualizer, diagram, context, plant_context = drake_setup()
   A, B, C, D, dt = make_system()
 
-  x0 = [-2., 0., -2., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
-  xN = [2., 0., 2., 0., 0., 0., 0., 0., 0., 0., np.pi, 0.]
+  x0 = [-2., 0., -2., 0., 0., 0.]
+  xN = [2., 0., 2., 0., 0., 0.]
 
-  plant.SetFreeBodyPose(plant_context, plant.GetBodyByName('chassis'),
-                        RigidTransform(rpy=RollPitchYaw(x0[6::2]), p=x0[:5:2]))
+  plant.SetFreeBodyPose(plant_context, plant.GetBodyByName('body'),
+                        RigidTransform(x0[::2]))
   visualizer.load()
   diagram.Publish(context)
 
   # http://www.cs.cmu.edu/~zkolter/course/15-780-s14/mip.pdf
-  u_limit = np.ones(6) * 10.
-  null_control = np.zeros(6)
+  u_limit = np.ones(2) * 10.
+  null_control = np.zeros(2)
   obs_lbx = -1
   obs_ubx = 1
   obs_lby = -1
@@ -98,8 +100,8 @@ def main():
   visualizer.start_recording()
   for i in range(N):
     context.SetTime(dt*i)
-    plant.SetFreeBodyPose(plant_context, plant.GetBodyByName('chassis'),
-                          RigidTransform(rpy=RollPitchYaw(x[i, 6::2].value), p=x[i, :5:2].value))
+    plant.SetFreeBodyPose(plant_context, plant.GetBodyByName('body'),
+                          RigidTransform(x[i, ::2].value))
 
     diagram.Publish(context)
   visualizer.stop_recording()
