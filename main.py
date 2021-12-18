@@ -9,23 +9,6 @@ from pydrake.all import RigidTransform
 from pydrake.math import RollPitchYaw
 
 
-def make_system():
-  dt = 0.1
-  A_tile = np.array([
-    [1., dt],
-    [0., 1.],
-  ])
-  A = np.kron(np.eye(6), A_tile)
-  B_tile = np.array([
-    [0.],
-    [dt],
-  ])
-  B = np.kron(np.eye(6), B_tile)
-  C = np.eye(12)
-  D = np.zeros((12, 6))
-  return A, B, C, D, dt
-
-
 def drake_setup():
   builder = DiagramBuilder()
   plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1e-3)
@@ -42,7 +25,6 @@ def drake_setup():
 
 def main():
   plant, visualizer, diagram, context, plant_context = drake_setup()
-  A, B, C, D, dt = make_system()
 
   x0 = [-2., 0., -2., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
   xN = [2., 0., 2., 0., 0., 0., 0., 0., 0., 0., np.pi, 0.]
@@ -78,9 +60,6 @@ def main():
     constraints += [x[n, 2] <= obs_lbx + z3[n] * bigM]
     constraints += [x[n, 2] >= obs_ubx - z4[n] * bigM]
     constraints += [z1 + z2 + z3 + z4 <= 3]
-
-    # dynamics
-    constraints += [x[n+1] == A @ x[n] + B @ u[n]]
 
     # control limits
     constraints += [u[n] <= u_limit]
