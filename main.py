@@ -1,6 +1,6 @@
 import numpy as np
 import cvxpy as cp
-import matplotlib.pyplot as plt
+from differentially_flat import DifferentialDriveTrajectory, rotate
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.framework import DiagramBuilder
@@ -23,74 +23,76 @@ def drake_setup():
   return plant, visualizer, diagram, context, plant_context
 
 
+def get_free_body_pose(x=0, y=0, z=0, roll=0, pitch=0, yaw=0):
+  return [x, y, z, roll, pitch, yaw]
+
 def main():
   plant, visualizer, diagram, context, plant_context = drake_setup()
 
-  x0 = [-2., 0., -2., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
-  xN = [2., 0., 2., 0., 0., 0., 0., 0., 0., 0., np.pi, 0.]
+  start_x = -2
+  end_x = 2
+  start_y = -2
+  end_y = 2
+  p0 = get_free_body_pose(x=start_x, y=start_y)
 
   plant.SetFreeBodyPose(plant_context, plant.GetBodyByName('chassis'),
-                        RigidTransform(rpy=RollPitchYaw(x0[6::2]), p=x0[:5:2]))
+                        RigidTransform(rpy=RollPitchYaw(p0[3:]), p=p0[:3]))
   visualizer.load()
   diagram.Publish(context)
 
-  # http://www.cs.cmu.edu/~zkolter/course/15-780-s14/mip.pdf
-  u_limit = np.ones(6) * 10.
-  null_control = np.zeros(6)
-  obs_lbx = -1
-  obs_ubx = 1
-  obs_lby = -1
-  obs_uby = 1
-  bigM = 10
-  N = 100
+  N = 22
+  t0 = 0
+  tf = 10
+  time_samples = np.linspace(t0, tf, N)
+  n_flat_outputs = 2
+  poly_degree = 5
+  smoothness_degree = 4
 
-  x = cp.Variable((N, A.shape[0]))
-  u = cp.Variable((N, B.shape[1]))
-  z1 = cp.Variable(N, integer=True)
-  z2 = cp.Variable(N, integer=True)
-  z3 = cp.Variable(N, integer=True)
-  z4 = cp.Variable(N, integer=True)
+  ddt = DifferentialDriveTrajectory(time_samples, n_flat_outputs,
+                                    poly_degree, smoothness_degree)
 
-  constraints = []
-  cost = 0
-  for n in range(N-1):
-    # obstacle avoidance using big M technique
-    constraints += [x[n, 0] <= obs_lbx + z1[n] * bigM]
-    constraints += [x[n, 0] >= obs_ubx - z2[n] * bigM]
-    constraints += [x[n, 2] <= obs_lbx + z3[n] * bigM]
-    constraints += [x[n, 2] >= obs_ubx - z4[n] * bigM]
-    constraints += [z1 + z2 + z3 + z4 <= 3]
+  ddt.add_cost()
+  ddt.add_constraint(t=0, derivative_order=0, bounds=[start_x, start_y], equality=True)
+  ddt.add_constraint(t=0, derivative_order=1, bounds=[0, 0], equality=True)
+  ddt.add_constraint(t=0, derivative_order=2, bounds=[0, 0], equality=True)
+  ddt.add_constraint(t=tf, derivative_order=0, bounds=[end_x, end_y], equality=True)
+  ddt.add_constraint(t=tf, derivative_order=1, bounds=[0, 0], equality=True)
+  ddt.add_constraint(t=tf, derivative_order=2, bounds=[0, 0], equality=True)
 
-    # control limits
-    constraints += [u[n] <= u_limit]
+  square = np.array([
+    [1, 1],
+    [-1, 1],
+    [-1, -1],
+    [1, -1],
+    [1, 1],
+  ])
+  theta = np.pi / 4
+  #square = rotate(theta, square)
 
-    # smooth trajectory
-    cost += cp.sum_squares(x[n+1] - x[n])
+  checkpoints = np.linspace(t0, tf, 44)
+  ddt.add_obstacle(square, checkpoints)
 
-  # start and final states
-  constraints += [x[0] == x0, x[N-1] == xN]
-  # final control
-  constraints += [u[N-1] == null_control]
-  problem = cp.Problem(cp.Minimize(cost), constraints)
-  problem.solve(solver=cp.GUROBI, verbose=True)
+  ddt.solve()
+
+  x_traj = []
+  y_traj = []
+  yaw_traj = []
+  t_traj = np.linspace(t0, tf, 100)
+  for t in t_traj:
+    flats = ddt.eval(t, 0)
+    x_traj.append(flats[0])
+    y_traj.append(flats[1])
+    yaw_traj.append(ddt.recover_yaw(t, 0))
 
   visualizer.start_recording()
-  for i in range(N):
-    context.SetTime(dt*i)
+  for t in range(len(t_traj)):
+    context.SetTime(t_traj[t])
+    p = get_free_body_pose(x=x_traj[t], y=y_traj[t], yaw=yaw_traj[t])
     plant.SetFreeBodyPose(plant_context, plant.GetBodyByName('chassis'),
-                          RigidTransform(rpy=RollPitchYaw(x[i, 6::2].value), p=x[i, :5:2].value))
-
+                          RigidTransform(rpy=RollPitchYaw(p[3:]), p=p[:3]))
     diagram.Publish(context)
   visualizer.stop_recording()
   visualizer.publish_recording()
-
-#  fig, ax = plt.subplots()
-#  ax.plot(x[:, 0].value, x[:, 2].value)
-#  obs_x = [obs_lbx, obs_lbx, obs_ubx, obs_ubx, obs_lbx]
-#  obs_y = [obs_lby, obs_uby, obs_uby, obs_lby, obs_lby]
-#  ax.plot(obs_x, obs_y)
-#  plt.show()
-#  plt.close()
 
 
 if __name__ == '__main__':
