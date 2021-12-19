@@ -70,10 +70,6 @@ class DifferentiallyFlatTrajectory:
       else:
         self.constraints += [lhs <= rhs]
 
-  def add_control_constraint(self, bounds):
-    # TODO
-    pass
-
   def _eval_spline(self, h, d, c):
     """
     h: float = time relative to start of spline
@@ -162,6 +158,10 @@ class DifferentialDriveTrajectory(DifferentiallyFlatTrajectory):
         lhs = flats[lhs_idx]
         self.add_single_constraint(lhs, bigM_rhs, greater_than=greater_than)
         self.add_single_constraint(cp.sum(b[t]), len(vertices)-2)
+
+  def add_control_constraint(self, bounds):
+    # TODO
+    return
 
   def recover_yaw(self, t, derivative_order):
     """
