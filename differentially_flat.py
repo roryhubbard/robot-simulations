@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 class DifferentiallyFlatTrajectory:
   """
   https://underactuated.mit.edu/trajopt.html
-  https://colab.research.google.com/github/RussTedrake/underactuated/blob/master/acrobot.ipynb#scrollTo=ZO_bsG2pA8bY
+  http://www.cs.cmu.edu/~zkolter/course/15-780-s14/mip.pdf
   """
 
   def __init__(self, sample_times, n_flat_outputs, poly_degree, smoothness_degree):
@@ -58,9 +58,7 @@ class DifferentiallyFlatTrajectory:
 
   def add_single_constraint(self, lhs, rhs, equality=False, greater_than=False):
     """
-    TODO: make this more elegant
-      - use canonical form
-      - remove equality and greater_than keyword arguments
+    TODO: use canonical form
     """
     if equality:
       self.constraints += [lhs == rhs]
@@ -74,6 +72,8 @@ class DifferentiallyFlatTrajectory:
     """
     vertices: list(tuple(float)) = coordinates specifying vertices of obstacle
       - counterclockwise ordering and closed (first element == last elements)
+    checkpoints: np.ndarray(float) = sample times to enforce as collision free
+    TODO: use canonical form
     """
     eps = 1e-6
     b = cp.Variable((checkpoints.size, len(vertices)-1), boolean=True)
