@@ -167,7 +167,10 @@ class DifferentialDriveTrajectory(DifferentiallyFlatTrajectory):
     """
     Recover yaw from flat outputs (x,y) at a derivative order and time t
     """
-    x, y = self.eval(t, derivative_order+2)
+    if derivative_order > 0:
+      # TODO: d/dx(arctan) = 1 / (1 + x^2)
+      raise NotImplementedError
+    x, y = self.eval(t, derivative_order+1)
     return np.arctan2(y, x)
 
   def recover_control_inputs(self, t, eps=1e-6):
