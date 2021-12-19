@@ -66,20 +66,17 @@ def main():
 
   x = cp.Variable((N, A.shape[0]))
   u = cp.Variable((N, B.shape[1]))
-  z1 = cp.Variable(N, integer=True)
-  z2 = cp.Variable(N, integer=True)
-  z3 = cp.Variable(N, integer=True)
-  z4 = cp.Variable(N, integer=True)
+  z = cp.Variable((N, 4), boolean=True)
 
   constraints = []
   cost = 0
   for n in range(N-1):
     # obstacle avoidance using big M technique
-    constraints += [x[n, 0] <= obs_lbx + z1[n] * bigM]
-    constraints += [x[n, 0] >= obs_ubx - z2[n] * bigM]
-    constraints += [x[n, 2] <= obs_lbx + z3[n] * bigM]
-    constraints += [x[n, 2] >= obs_ubx - z4[n] * bigM]
-    constraints += [z1 + z2 + z3 + z4 <= 3]
+    constraints += [x[n, 0] <= obs_lbx + z[n, 0] * bigM]
+    constraints += [x[n, 0] >= obs_ubx - z[n, 1] * bigM]
+    constraints += [x[n, 2] <= obs_lby + z[n, 2] * bigM]
+    constraints += [x[n, 2] >= obs_uby - z[n, 3] * bigM]
+    constraints += [cp.sum(z[n]) <= 3]
 
     # dynamics
     constraints += [x[n+1] == A @ x[n] + B @ u[n]]
