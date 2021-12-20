@@ -56,6 +56,10 @@ def main():
     parser.AddModelFromFile('models/box.sdf', model_name='box7'),
     parser.AddModelFromFile('models/box.sdf', model_name='box8'),
   ]
+  arms = [
+    parser.AddModelFromFile('models/iiwa_arm.sdf', model_name='arm1'),
+    parser.AddModelFromFile('models/iiwa_arm.sdf', model_name='arm2'),
+  ]
   plant.Finalize()
   visualizer = ConnectMeshcatVisualizer(builder, scene_graph,
                                         zmq_url='tcp://127.0.0.1:6000')
@@ -70,8 +74,8 @@ def main():
   p0 = fill_pose(x=start_x, y=start_y)
 
   set_pose(plant, plant_context, 'chassis', 'ego', p=p0[:3], rpy=p0[3:])
-  set_pose(plant, plant_context, 'chassis', 'other1', p=[4, 4, 0], rpy=p0[3:])
-  set_pose(plant, plant_context, 'chassis', 'other2', p=[3, 3, 0], rpy=p0[3:])
+  set_pose(plant, plant_context, 'chassis', 'other1', p=[-2, 4, 0], rpy=p0[3:])
+  set_pose(plant, plant_context, 'chassis', 'other2', p=[-3, 3, 0], rpy=p0[3:])
 
   set_pose(plant, plant_context, 'box', boxes[0], p=[0, 0, .5])
   set_pose(plant, plant_context, 'box', boxes[1], p=[-1.1, 0, .5])
@@ -81,6 +85,13 @@ def main():
   set_pose(plant, plant_context, 'box', boxes[5], p=[0, 3.3, .5])
   set_pose(plant, plant_context, 'box', boxes[6], p=[-2.6, 1.6, .5])
   set_pose(plant, plant_context, 'box', boxes[7], p=[-3.7, 1.6, .5])
+
+  set_pose(plant, plant_context, 'iiwa_link_0', 'arm1', p=[0, 0, 1])
+  set_pose(plant, plant_context, 'iiwa_link_0', 'arm2', p=[-2.6, 1.6, 1], rpy=[0, 0, np.pi])
+  for arm in arms:
+    plant.GetJointByName('iiwa_joint_2', arm).set_angle(plant_context, -np.pi/4)
+    plant.GetJointByName('iiwa_joint_4', arm).set_angle(plant_context, -np.pi/4)
+    plant.GetJointByName('iiwa_joint_6', arm).set_angle(plant_context, -np.pi/4)
 
   visualizer.load()
   diagram.Publish(context)
