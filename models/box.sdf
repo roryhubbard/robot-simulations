@@ -1,0 +1,25 @@
+<?xml version='1.0'?>
+<sdf version='1.9'>
+  <model name='just_a_box'>
+    <!-- http://gazebosim.org/tutorials/?tut=build_robot -->
+    <pose>0 0 0 0 0 0</pose>
+    <link name='box'>
+      <pose>0 0 .1 0 0 0</pose>
+      <collision name='box_collision'>
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='box_visual'>
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+

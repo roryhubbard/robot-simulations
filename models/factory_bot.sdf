@@ -1,10 +1,12 @@
-<?xml version="1.0"?>
-<sdf version="1.9">
-  <model name="factory_bot">
+<?xml version='1.0'?>
+<sdf version='1.9'>
+  <model name='factory_bot'>
     <!-- http://gazebosim.org/tutorials/?tut=build_robot -->
-    <pose>0 0 .1 0 0 0</pose>
+    <pose>0 0 0 0 0 0</pose>
+
     <link name='chassis'>
       <pose>0 0 .1 0 0 0</pose>
+
       <collision name='chassis_collision'>
         <geometry>
           <box>
@@ -12,7 +14,6 @@
           </box>
         </geometry>
       </collision>
-
       <visual name='chassis_visual'>
         <geometry>
           <box>
@@ -39,7 +40,6 @@
           </friction>
         </surface>
       </collision>
-
       <visual name='caster_visual'>
         <pose>-0.15 0 -0.05 0 0 0</pose>
         <geometry>
@@ -48,49 +48,69 @@
           </sphere>
         </geometry>
       </visual>
-    </link>
 
-    <link name="left_wheel">
-      <pose>0.1 0.13 0.1 0 1.5707 1.5707</pose>
-      <collision name="left_wheel_collision">
+      <visual name='torso_visual'>
+        <pose>0. 0 .55 0 0. 0</pose>
         <geometry>
           <cylinder>
-            <radius>.1</radius>
+            <length>1</length>
+            <radius>0.1</radius>
+          </cylinder>
+        </geometry>
+      </visual>
+
+      <visual name='top_visual'>
+        <pose>0. 0 1.1 0 0. 0</pose>
+        <geometry>
+          <box>
+            <size>.4 .4 .05</size>
+          </box>
+        </geometry>
+      </visual>
+
+    </link>
+
+    <link name='left_wheel'>
+      <pose>0.1 0.13 0.1 0 1.5707 1.5707</pose>
+      <collision name='left_wheel_collision'>
+        <geometry>
+          <cylinder>
+            <radius>.2</radius>
             <length>.05</length>
           </cylinder>
         </geometry>
       </collision>
-      <visual name="left_wheel_visual">
+      <visual name='left_wheel_visual'>
         <geometry>
           <cylinder>
-            <radius>.1</radius>
+            <radius>.2</radius>
             <length>.05</length>
           </cylinder>
         </geometry>
       </visual>
     </link>
 
-    <link name="right_wheel">
+    <link name='right_wheel'>
       <pose>0.1 -0.13 0.1 0 1.5707 1.5707</pose>
-      <collision name="right_wheel_collision">
+      <collision name='right_wheel_collision'>
         <geometry>
           <cylinder>
-            <radius>.1</radius>
+            <radius>.2</radius>
             <length>.05</length>
           </cylinder>
         </geometry>
       </collision>
-      <visual name="right_wheel_visual">
+      <visual name='right_wheel_visual'>
         <geometry>
           <cylinder>
-            <radius>.1</radius>
+            <radius>.2</radius>
             <length>.05</length>
           </cylinder>
         </geometry>
       </visual>
       </link>
 
-    <joint type="revolute" name="left_wheel_hinge">
+    <joint type='revolute' name='left_wheel_hinge'>
       <pose>0 0 -0.03 0 0 0</pose>
       <child>left_wheel</child>
       <parent>chassis</parent>
@@ -99,7 +119,7 @@
       </axis>
     </joint>
 
-    <joint type="revolute" name="right_wheel_hinge">
+    <joint type='revolute' name='right_wheel_hinge'>
       <pose>0 0 0.03 0 0 0</pose>
       <child>right_wheel</child>
       <parent>chassis</parent>
