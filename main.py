@@ -10,8 +10,12 @@ from pydrake.all import RigidTransform
 from pydrake.math import RollPitchYaw
 
 
-def set_pose(plant, plant_context, ob, p=[0, 0, 0], rpy=[0, 0, 0]):
-  plant.SetFreeBodyPose(plant_context, ob,
+def set_pose(plant, plant_context, body_name,
+             model_instance, p=[0, 0, 0], rpy=[0, 0, 0]):
+  body = plant.GetBodyByName(body_name, plant.GetModelInstanceByName(model_instance)) \
+    if isinstance(model_instance, str) \
+    else plant.GetBodyByName(body_name, model_instance)
+  plant.SetFreeBodyPose(plant_context, body,
                         RigidTransform(rpy=RollPitchYaw(rpy), p=p))
 
 
@@ -30,6 +34,7 @@ def get_box_vertices(plant, plant_context, box, l=1):
   ]
   return vertices
 
+
 def fill_pose(x=0, y=0, z=0, roll=0, pitch=0, yaw=0):
   return [x, y, z, roll, pitch, yaw]
 
@@ -38,7 +43,9 @@ def main():
   builder = DiagramBuilder()
   plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1e-3)
   parser = Parser(plant)
-  parser.AddModelFromFile('models/factory_bot.sdf')
+  parser.AddModelFromFile('models/factory_bot.sdf', model_name='ego')
+  parser.AddModelFromFile('models/factory_bot.sdf', model_name='other1')
+  parser.AddModelFromFile('models/factory_bot.sdf', model_name='other2')
   boxes = [
     parser.AddModelFromFile('models/box.sdf', model_name='box1'),
     parser.AddModelFromFile('models/box.sdf', model_name='box2'),
@@ -62,24 +69,18 @@ def main():
   end_y = 3
   p0 = fill_pose(x=start_x, y=start_y)
 
-  set_pose(plant, plant_context,
-    plant.GetBodyByName('chassis'), p=p0[:3], rpy=p0[3:])
-  set_pose(plant, plant_context,
-    plant.GetBodyByName('box', boxes[0]), p=[0, 0, .5])
-  set_pose(plant, plant_context,
-    plant.GetBodyByName('box', boxes[1]), p=[-1.1, 0, .5])
-  set_pose(plant, plant_context,
-    plant.GetBodyByName('box', boxes[2]), p=[-2.2, 0, .5])
-  set_pose(plant, plant_context,
-    plant.GetBodyByName('box', boxes[3]), p=[0, 1.1, .5])
-  set_pose(plant, plant_context,
-    plant.GetBodyByName('box', boxes[4]), p=[0, 2.2, .5])
-  set_pose(plant, plant_context,
-    plant.GetBodyByName('box', boxes[5]), p=[0, 3.3, .5])
-  set_pose(plant, plant_context,
-    plant.GetBodyByName('box', boxes[6]), p=[-2.6, 1.6, .5])
-  set_pose(plant, plant_context,
-    plant.GetBodyByName('box', boxes[7]), p=[-3.7, 1.6, .5])
+  set_pose(plant, plant_context, 'chassis', 'ego', p=p0[:3], rpy=p0[3:])
+  set_pose(plant, plant_context, 'chassis', 'other1', p=[4, 4, 0], rpy=p0[3:])
+  set_pose(plant, plant_context, 'chassis', 'other2', p=[3, 3, 0], rpy=p0[3:])
+
+  set_pose(plant, plant_context, 'box', boxes[0], p=[0, 0, .5])
+  set_pose(plant, plant_context, 'box', boxes[1], p=[-1.1, 0, .5])
+  set_pose(plant, plant_context, 'box', boxes[2], p=[-2.2, 0, .5])
+  set_pose(plant, plant_context, 'box', boxes[3], p=[0, 1.1, .5])
+  set_pose(plant, plant_context, 'box', boxes[4], p=[0, 2.2, .5])
+  set_pose(plant, plant_context, 'box', boxes[5], p=[0, 3.3, .5])
+  set_pose(plant, plant_context, 'box', boxes[6], p=[-2.6, 1.6, .5])
+  set_pose(plant, plant_context, 'box', boxes[7], p=[-3.7, 1.6, .5])
 
   visualizer.load()
   diagram.Publish(context)
@@ -125,7 +126,7 @@ def main():
   x_traj = []
   y_traj = []
   yaw_traj = []
-  t_traj = np.linspace(t0, tf, N*3)
+  t_traj = np.linspace(t0, tf, N*2)
   for t in t_traj:
     flats = ddt.eval(t, 0)
     x_traj.append(flats[0])
@@ -136,16 +137,16 @@ def main():
   for t in range(len(t_traj)):
     context.SetTime(t_traj[t])
     p = fill_pose(x=x_traj[t], y=y_traj[t], yaw=yaw_traj[t])
-    plant.SetFreeBodyPose(plant_context, plant.GetBodyByName('chassis'),
-                          RigidTransform(rpy=RollPitchYaw(p[3:]), p=p[:3]))
+    set_pose(plant, plant_context, 'chassis', 'ego',
+             p=p[:3], rpy=RollPitchYaw(p[3:]))
     diagram.Publish(context)
   visualizer.stop_recording()
   visualizer.publish_recording()
 
   ax.plot(x_traj, y_traj, '.')
   plt.gca().set_aspect('equal')
-  plt.show()
-  plt.close()
+  #plt.show()
+  #plt.close()
 
 
 if __name__ == '__main__':
