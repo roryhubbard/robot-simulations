@@ -5,10 +5,6 @@ import matplotlib.pyplot as plt
 
 
 class DifferentiallyFlatTrajectory:
-  """
-  https://underactuated.mit.edu/trajopt.html
-  http://www.cs.cmu.edu/~zkolter/course/15-780-s14/mip.pdf
-  """
 
   def __init__(self, ts, nflats, poly_degree, smoothness_degree):
     self.ts = ts
@@ -100,9 +96,9 @@ class DifferentiallyFlatTrajectory:
 
     return flats
 
-  def solve(self):
+  def solve(self, verbose=False):
     self.problem = cp.Problem(cp.Minimize(self.cost), self.constraints)
-    self.problem.solve(solver=cp.GUROBI, verbose=True)
+    self.problem.solve(solver=cp.GUROBI, verbose=verbose)
 
 
 class DifferentialDriveTrajectory(DifferentiallyFlatTrajectory):
@@ -110,12 +106,20 @@ class DifferentialDriveTrajectory(DifferentiallyFlatTrajectory):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-  def add_obstacle(self, vertices, checkpoints, bigM=10, eps=1e-6):
+  def add_cost(self):
+    """
+    TODO: don't use default cost from parent class
+    """
+    super().add_cost()
+
+  def add_obstacle(self, vertices, checkpoints, bigM=10, eps=1e-6, buffer=0):
     """
     vertices: list(tuple(float)) = coordinates specifying vertices of obstacle
       - counterclockwise ordering and closed (first element == last elements)
     checkpoints: np.ndarray(float) = sample times to enforce as collision free
-    TODO: use canonical form
+    TODO:
+      - use canonical form
+      - buffer breaks solver for some large enough value
     """
     b = cp.Variable((checkpoints.size, len(vertices)-1), boolean=True)
 
@@ -151,9 +155,9 @@ class DifferentialDriveTrajectory(DifferentiallyFlatTrajectory):
             greater_than = False
 
         if greater_than:
-          bigM_rhs = rhs - b[t, i] * bigM
+          bigM_rhs = rhs + buffer - b[t, i] * bigM
         else:
-          bigM_rhs = rhs + b[t, i] * bigM
+          bigM_rhs = rhs - buffer + b[t, i] * bigM
 
         lhs = flats[lhs_idx]
         self.add_single_constraint(lhs, bigM_rhs, greater_than=greater_than)
