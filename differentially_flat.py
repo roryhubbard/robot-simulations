@@ -154,10 +154,8 @@ class DifferentialDriveTrajectory(DifferentiallyFlatTrajectory):
           if -np.pi / 2 < theta < np.pi / 2:
             greater_than = False
 
-        if greater_than:
-          bigM_rhs = rhs + buffer - b[t, i] * bigM
-        else:
-          bigM_rhs = rhs - buffer + b[t, i] * bigM
+        bigM_rhs = rhs + buffer - b[t, i] * bigM if greater_than \
+          else rhs - buffer + b[t, i] * bigM
 
         lhs = flats[lhs_idx]
         self.add_single_constraint(lhs, bigM_rhs, greater_than=greater_than)
