@@ -25,14 +25,13 @@ def get_box_vertices(plant, plant_context, box, l=1):
   """
   hl = l / 2
   x, y, z = plant.GetFreeBodyPose(plant_context, box).GetAsMatrix34()[:, -1]
-  vertices = [
+  return np.array([
     [x + hl, y + hl],
     [x - hl, y + hl],
     [x - hl, y - hl],
     [x + hl, y - hl],
     [x + hl, y + hl],
-  ]
-  return vertices
+  ])
 
 
 def fill_pose(x=0, y=0, z=0, roll=0, pitch=0, yaw=0):
