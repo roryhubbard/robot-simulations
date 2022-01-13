@@ -102,13 +102,11 @@ class DifferentialDriveTrajectory(DifferentiallyFlatTrajectory):
     """
     super().add_cost()
 
-  def add_obstacle(self, vertices, checkpoints, bigM=10, eps=1e-6, buffer=0):
+  def add_obstacle(self, vertices, checkpoints, bigM=10, buffer=0):
     """
     vertices: list(tuple(float)) = coordinates specifying vertices of obstacle
       - counterclockwise ordering and closed (first element == last elements)
     checkpoints: np.ndarray(float) = sample times to enforce as collision free
-    TODO:
-      - buffer breaks solver for some large enough value
     """
     z = cp.Variable((checkpoints.size, len(vertices)-1), boolean=True)
     A = []
