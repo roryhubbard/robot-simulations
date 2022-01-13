@@ -51,10 +51,8 @@ class DifferentiallyFlatTrajectory:
     """
     flats = self.eval(t, derivative_order)
     for z in range(len(flats)):
-      self.add_single_constraint(flats[z], bounds[z], equality)
-
-  def add_single_constraint(self, lhs, rhs, equality=False):
-    self.constraints += [lhs == rhs] if equality else [lhs <= rhs]
+      self.constraints += [flats[z] == bounds[z]] if equality \
+        else [flats[z] <= bounds[z]]
 
   def _eval_spline(self, h, d, c):
     """
