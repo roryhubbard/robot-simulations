@@ -118,48 +118,28 @@ class DifferentialDriveTrajectory(DifferentiallyFlatTrajectory):
       - counterclockwise ordering and closed (first element == last elements)
     checkpoints: np.ndarray(float) = sample times to enforce as collision free
     TODO:
-      - use canonical form
       - buffer breaks solver for some large enough value
     """
-    b = cp.Variable((checkpoints.size, len(vertices)-1), boolean=True)
+    z = cp.Variable((checkpoints.size, len(vertices)-1), boolean=True)
+    A = []
+    b = []
+
+    for i in range(len(vertices)-1):
+      v1 = vertices[i]
+      v2 = vertices[i+1]
+      a = get_orthoganal_vector(v2 - v1)
+      A.append(a)
+      b.append(a @ v1)
+
+    A = np.asarray(A)
+    b = np.asarray(b)
 
     for t in checkpoints:
       flats = self.eval(t, 0)
-
-      for i in range(len(vertices)-1):
-        v1 = vertices[i]
-        v2 = vertices[i+1]
-        y_delta = v2[1] - v1[1]
-        x_delta = v2[0] - v1[0]
-        greater_than = True
-        if abs(y_delta) < eps:
-          # horizontal
-          rhs = v2[1]
-          lhs_idx = 1
-          if x_delta > 0:
-            greater_than = False
-        elif abs(x_delta) < eps:
-          # vertical
-          rhs = v2[0]
-          lhs_idx = 0
-          if y_delta < 0:
-            greater_than = False
-        else:
-          # slanted
-          m = y_delta / x_delta
-          y_intercept = v2[1] - m * v2[0]
-          rhs = m * flats[0] + y_intercept
-          lhs_idx = 1
-          theta = np.arctan2(y_delta, x_delta)
-          if -np.pi / 2 < theta < np.pi / 2:
-            greater_than = False
-
-        bigM_rhs = rhs + buffer - b[t, i] * bigM if greater_than \
-          else rhs - buffer + b[t, i] * bigM
-
-        lhs = flats[lhs_idx]
-        self.add_single_constraint(lhs, bigM_rhs, greater_than=greater_than)
-        self.add_single_constraint(cp.sum(b[t]), len(vertices)-2)
+      bigM_rhs = b + z[t] * bigM - buffer
+      for i in range(A.shape[0]):
+        self.constraints += [A[i] @ flats <= bigM_rhs[i]]
+      self.constraints += [cp.sum(z[t]) <= len(vertices)-2]
 
   def add_control_constraint(self, bounds):
     # TODO
@@ -189,12 +169,20 @@ class DifferentialDriveTrajectory(DifferentiallyFlatTrajectory):
     return long_accl, yaw_ddot
 
 
+def get_orthoganal_vector(v):
+  R = np.array([
+    [0, -1],
+    [1, 0],
+  ])
+  return R @ v
+
+
 def rotate(theta, vertices):
   R = np.array([
     [np.cos(theta), -np.sin(theta)],
     [np.sin(theta), np.cos(theta)],
   ])
-  return (R @ vertices.T).T
+  return vertices @ R.T
 
 
 def main():
@@ -230,7 +218,7 @@ def main():
   checkpoints = np.linspace(t0, tf, 44)
   ddt.add_obstacle(square, checkpoints)
 
-  ddt.solve()
+  ddt.solve(verbose=True)
 
   x = []
   y = []
