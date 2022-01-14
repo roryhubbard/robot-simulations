@@ -49,10 +49,9 @@ class DifferentiallyFlatTrajectory:
     """
     Add constraint to all flat outputs at derivative order
     """
-    flats = self.eval(t, derivative_order)
-    for z in range(len(flats)):
-      self.constraints += [flats[z] == bounds[z]] if equality \
-        else [flats[z] <= bounds[z]]
+    bounds = np.asarray(bounds).reshape(-1, 1)
+    flats = cp.vstack(self.eval(t, derivative_order))
+    self.constraints += [flats == bounds] if equality else [flats <= bounds]
 
   def _eval_spline(self, h, d, c):
     """
@@ -94,12 +93,6 @@ class DifferentialDriveTrajectory(DifferentiallyFlatTrajectory):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-  def add_cost(self):
-    """
-    TODO: don't use default cost from parent class
-    """
-    super().add_cost()
-
   def add_obstacle(self, vertices, checkpoints, bigM=10, buffer=0):
     """
     vertices: list(tuple(float)) = coordinates specifying vertices of obstacle
@@ -121,15 +114,10 @@ class DifferentialDriveTrajectory(DifferentiallyFlatTrajectory):
     b = np.asarray(b)
 
     for t in checkpoints:
-      flats = self.eval(t, 0)
-      bigM_rhs = b + z[t] * bigM - buffer
-      for i in range(A.shape[0]):
-        self.constraints += [A[i] @ flats <= bigM_rhs[i]]
-      self.constraints += [cp.sum(z[t]) <= len(vertices)-2]
-
-  def add_control_constraint(self, bounds):
-    # TODO
-    return
+      flats = cp.vstack(self.eval(t, 0))
+      bigM_rhs = cp.vstack(b + z[t] * bigM - buffer)
+      self.constraints += [A @ flats <= bigM_rhs,
+                           cp.sum(z[t]) <= len(vertices) - 2]
 
   def recover_yaw(self, t, derivative_order):
     """
