@@ -27,10 +27,10 @@ class DifferentiallyFlatTrajectory:
     """
     for s in range(self.ts.size-1):
       self.cost += cp.sum_squares(self.spline_coeffs[s][:, -1])
-      spline = self.eval(s, 0)
-      next_spline = self.eval(s+1, 0)
-      for z in range(self.nflats):
-        self.cost += cp.sum_squares(next_spline[z] - spline[z])
+     # spline = self.eval(s, 0)
+     # next_spline = self.eval(s+1, 0)
+     # for z in range(self.nflats):
+     #   self.cost += cp.sum_squares(next_spline[z] - spline[z])
 
   def _add_continuity_constraints(self):
     for s in range(self.ts.size-1):
@@ -160,7 +160,7 @@ def rotate(theta, vertices):
 
 
 def main():
-  N = 22
+  N = 5
   t0 = 0
   tf = 10
   time_samples = np.linspace(t0, tf, N)
