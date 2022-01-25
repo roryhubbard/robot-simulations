@@ -9,6 +9,17 @@ class DifferentialDriveTrajectory(PiecewisePolynomial):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
+  def add_cost(self):
+    """
+    Minimize jerk
+    """
+    for s in range(self.ns):
+      h = self.ts[s+1] - self.ts[s]
+      P = get_jerk_matrix(h)
+      for z in range(self.nflats):
+        x = self.spline_coeffs[s][z]
+        self.cost += (1/2) * cp.quad_form(x, P)
+
   def add_obstacle(self, vertices, checkpoints, bigM=10, buffer=0):
     """
     vertices: list(tuple(float)) = coordinates specifying vertices of obstacle
@@ -57,6 +68,21 @@ class DifferentialDriveTrajectory(PiecewisePolynomial):
     long_accl = x / np.cos(yaw) if abs(np.cos(yaw)) > eps else y / np.sin(yaw)
     yaw_ddot = np.arctan2(y, x)
     return long_accl, yaw_ddot
+
+
+def get_jerk_matrix(t):
+  """
+  Integral of squared jerk over the interval: [0, t]
+  Assumes 5th order polynomial
+  """
+  return np.array([
+    [0, 0, 0,        0,         0,        0],
+    [0, 0, 0,        0,         0,        0],
+    [0, 0, 0,        0,         0,        0],
+    [0, 0, 0,     36*t,   72*t**2, 120*t**3],
+    [0, 0, 0,  72*t**2,  192*t**3, 360*t**4],
+    [0, 0, 0, 120*t**3,  360*t**4, 720*t**5],
+  ])
 
 
 def get_orthoganal_vector(v):
