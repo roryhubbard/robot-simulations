@@ -23,8 +23,7 @@ class PiecewisePolynomial:
 
   def add_cost(self):
     """
-    Default cost
-      - minimize highest order coefficients
+    Minimize highest order coefficients
     """
     for s in range(self.ns):
       self.cost += cp.sum_squares(self.spline_coeffs[s][:, -1])
