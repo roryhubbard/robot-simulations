@@ -4,16 +4,28 @@ import cvxpy as cp
 import matplotlib.pyplot as plt
 
 
-class DifferentiallyFlatTrajectory:
+def get_jerk_matrix(t):
+  return np.array([
+    [0, 0, 0,        0,         0,        0],
+    [0, 0, 0,        0,         0,        0],
+    [0, 0, 0,        0,         0,        0],
+    [0, 0, 0,     36*t,   72*t**2, 120*t**3],
+    [0, 0, 0,  72*t**2,  192*t**3, 360*t**4],
+    [0, 0, 0, 120*t**3,  360*t**4, 720*t**5],
+  ])
+
+
+class PiecewisePolynomialTrajectory:
 
   def __init__(self, ts, nflats, poly_degree, smoothness_degree):
     self.ts = ts
+    self.ns = self.ts.size - 1 # number of splines in trajectory
     self.nflats = nflats
     self.poly_degree = poly_degree
     self.smoothness_degree = smoothness_degree
     self.spline_coeffs = [
       cp.Variable((nflats, poly_degree+1))
-      for _ in range(self.ts.size)
+      for _ in range(self.ns)
     ]
     self.cost = 0
     self.constraints = []
@@ -22,13 +34,17 @@ class DifferentiallyFlatTrajectory:
   def add_cost(self):
     """
     Default cost
-      - minimize highest order elements
+      - minimize jerk
     """
-    for s in range(self.ts.size-1):
-      self.cost += cp.sum_squares(self.spline_coeffs[s][:, -1])
+    for s in range(self.ns):
+      h = self.ts[s+1] - self.ts[s]
+      P = get_jerk_matrix(h)
+      for z in range(self.nflats):
+        x = self.spline_coeffs[s][z]
+        self.cost += (1/2) * cp.quad_form(x, P)
 
   def _add_continuity_constraints(self):
-    for s in range(self.ts.size-1):
+    for s in range(self.ns-1):
       h = self.ts[s+1] - self.ts[s]
 
       for z in range(self.nflats):
@@ -66,6 +82,8 @@ class DifferentiallyFlatTrajectory:
       - coefficients could be solved or unsolved depending on when this function is called
     """
     s = self.ts[self.ts <= t].argmax()
+    if s >= self.ns:
+      s = self.ns - 1
     h = t - self.ts[s]
 
     c = self.spline_coeffs[s] \
@@ -83,7 +101,7 @@ class DifferentiallyFlatTrajectory:
     self.problem.solve(solver=cp.GUROBI, verbose=verbose)
 
 
-class DifferentialDriveTrajectory(DifferentiallyFlatTrajectory):
+class DifferentialDriveTrajectory(PiecewisePolynomialTrajectory):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
@@ -213,7 +231,7 @@ def main():
 
 
 if __name__ == '__main__':
-  plt.rcParams['figure.figsize'] = [16, 10]
+  plt.rcParams['figure.figsize'] = [10, 8]
   plt.rcParams['savefig.facecolor'] = 'black'
   plt.rcParams['figure.facecolor'] = 'black'
   plt.rcParams['figure.edgecolor'] = 'white'
