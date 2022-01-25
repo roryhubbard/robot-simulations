@@ -47,27 +47,28 @@ class DifferentialDriveTrajectory(PiecewisePolynomial):
                            cp.sum(z[t]) <= len(vertices) - 2]
 
   def recover_yaw(self, t, derivative_order):
-    """
-    Recover yaw from flat outputs (x,y) at a derivative order and time t
-    """
-    if derivative_order > 0:
-      # TODO: d/dx(arctan) = 1 / (1 + x^2)
+    if derivative_order > 1:
       raise NotImplementedError
-    x, y = self.eval(t, derivative_order+1)
-    return np.arctan2(y, x)
+    xdot, ydot = self.eval(t, 1)
+    if derivative_order == 0:
+      return np.arctan2(ydot, xdot)
+    xddot, yddot = self.eval(t, 2)
+    if derivative_order == 1:
+      return (xdot * yddot - xddot * ydot) / (xdot**2 + ydot**2)
 
-  def recover_control_inputs(self, t, eps=1e-6):
-    """
-    Recover control inputs from flat outputs (x,y) at time t
-    Return:
-      - u1: longitudinal acceleration
-      - u2: angular acceleration
-    """
-    x, y = self.eval(t, 4)
-    yaw = self.recover_yaw(t, 0)
-    long_accl = x / np.cos(yaw) if abs(np.cos(yaw)) > eps else y / np.sin(yaw)
-    yaw_ddot = np.arctan2(y, x)
-    return long_accl, yaw_ddot
+  def recover_longitudinal_velocity(self, t):
+    xdot, ydot = self.eval(t, 1)
+    return np.sqrt(xdot**2 + ydot**2)
+
+  def recover_longitudinal_acceleration(self, t):
+    xdot, ydot = self.eval(t, 1)
+    xddot, yddot = self.eval(t, 2)
+    return (xdot * xddot + ydot * yddot) / (np.sqrt(xdot**2 + ydot**2))
+
+  def recover_angular_velocity(self, t):
+    xdot, ydot = self.eval(t, 1)
+    xddot, yddot = self.eval(t, 2)
+    return (xdot * yddot - xddot * ydot) / (xdot**2 + ydot**2)
 
 
 def get_jerk_matrix(t):
@@ -139,17 +140,12 @@ def main():
   x = []
   y = []
   yaw = []
-  long_accl = []
-  ang_accl = []
   t_result = np.linspace(t0, tf, 100)
   for t in t_result:
     flats = ddt.eval(t, 0)
     x.append(flats[0])
     y.append(flats[1])
     yaw.append(ddt.recover_yaw(t, 0))
-    u1, u2 = ddt.recover_control_inputs(t)
-    long_accl.append(u1)
-    ang_accl.append(u2)
 
   fig, ax = plt.subplots(ncols=2)
   ax[0].plot(x, y, '.')
