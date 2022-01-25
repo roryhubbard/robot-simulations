@@ -3,15 +3,6 @@ from math import factorial
 import cvxpy as cp
 
 
-def get_jerk_matrix(t):
-  return np.array([
-    [0, 0, 0,        0,         0,        0],
-    [0, 0, 0,        0,         0,        0],
-    [0, 0, 0,        0,         0,        0],
-    [0, 0, 0,     36*t,   72*t**2, 120*t**3],
-    [0, 0, 0,  72*t**2,  192*t**3, 360*t**4],
-    [0, 0, 0, 120*t**3,  360*t**4, 720*t**5],
-  ])
 
 
 class PiecewisePolynomial:
@@ -33,14 +24,10 @@ class PiecewisePolynomial:
   def add_cost(self):
     """
     Default cost
-      - minimize jerk
+      - minimize highest order coefficients
     """
     for s in range(self.ns):
-      h = self.ts[s+1] - self.ts[s]
-      P = get_jerk_matrix(h)
-      for z in range(self.nflats):
-        x = self.spline_coeffs[s][z]
-        self.cost += (1/2) * cp.quad_form(x, P)
+      self.cost += cp.sum_squares(self.spline_coeffs[s][:, -1])
 
   def _add_continuity_constraints(self):
     for s in range(self.ns-1):
