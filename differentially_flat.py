@@ -15,7 +15,7 @@ class DifferentialDriveTrajectory(PiecewisePolynomial):
     """
     for s in range(self.ns):
       h = self.ts[s+1] - self.ts[s]
-      P = get_jerk_matrix(h)
+      P = get_jerk_matrix(h, self.poly_degree)
       for z in range(self.nflats):
         x = self.spline_coeffs[s][z]
         self.cost += (1/2) * cp.quad_form(x, P)
@@ -71,12 +71,12 @@ class DifferentialDriveTrajectory(PiecewisePolynomial):
     return (xdot * yddot - xddot * ydot) / (xdot**2 + ydot**2)
 
 
-def get_jerk_matrix(t):
+def get_jerk_matrix(t, po=5):
   """
   Integral of squared jerk over the interval: [0, t]
-  Assumes 5th order polynomial
+  Assumes polynomial order <= 5
   """
-  return np.array([
+  P = np.array([
     [0, 0, 0,        0,         0,        0],
     [0, 0, 0,        0,         0,        0],
     [0, 0, 0,        0,         0,        0],
@@ -84,6 +84,7 @@ def get_jerk_matrix(t):
     [0, 0, 0,  72*t**2,  192*t**3, 360*t**4],
     [0, 0, 0, 120*t**3,  360*t**4, 720*t**5],
   ])
+  return P[:po+1, :po+1]
 
 
 def get_orthoganal_vector(v):
@@ -108,8 +109,8 @@ def main():
   tf = 10
   time_samples = np.linspace(t0, tf, N)
   n_flat_outputs = 2
-  poly_degree = 5
-  smoothness_degree = 4
+  poly_degree = 3
+  smoothness_degree = 2
 
   ddt = DifferentialDriveTrajectory(time_samples, n_flat_outputs,
                                     poly_degree, smoothness_degree)
@@ -132,7 +133,7 @@ def main():
   theta = np.pi / 4
   square = rotate(theta, square)
 
-  checkpoints = np.linspace(t0, tf, 44)
+  checkpoints = np.linspace(t0, tf, 22)
   ddt.add_obstacle(square, checkpoints)
 
   ddt.solve(verbose=True)
